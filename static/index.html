@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartDB MCP 管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+        .header h1 span { color: #4fc3f7; }
+        .header .subtitle { font-size: 13px; color: #90caf9; margin-top: 4px; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .btn-primary { background: #1976d2; color: #fff; }
+        .btn-primary:hover { background: #1565c0; }
+        .btn-success { background: #2e7d32; color: #fff; }
+        .btn-success:hover { background: #1b5e20; }
+        .btn-danger { background: #c62828; color: #fff; }
+        .btn-danger:hover { background: #b71c1c; }
+        .btn-warning { background: #f57c00; color: #fff; }
+        .btn-warning:hover { background: #e65100; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #d0d0d0;
+            color: #666;
+        }
+        .btn-outline:hover { border-color: #1976d2; color: #1976d2; }
+        .btn-activate { background: #00897b; color: #fff; }
+        .btn-activate:hover { background: #00695c; }
+        .btn-deactivate { background: #546e7a; color: #fff; }
+        .btn-deactivate:hover { background: #37474f; }
+        .btn-dml-on { background: #e65100; color: #fff; }
+        .btn-dml-on:hover { background: #bf360c; }
+        .btn-dml-off { background: #78909c; color: #fff; }
+        .btn-dml-off:hover { background: #546e7a; }
+
+        .mcp-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .mcp-badge.active { background: #e0f2f1; color: #00695c; }
+        .mcp-badge.inactive { background: #f5f5f5; color: #9e9e9e; }
+        .mcp-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        .mcp-badge.active .dot { background: #00c853; }
+        .mcp-badge.inactive .dot { background: #bdbdbd; }
+
+        .dml-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .dml-badge.allowed { background: #fff3e0; color: #e65100; }
+        .dml-badge.forbidden { background: #f5f5f5; color: #9e9e9e; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+        tr:hover { background: #f5f8ff; }
+        .db-type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .db-type-dm { background: #e3f2fd; color: #1565c0; }
+        .db-type-gbase_8a { background: #fff3e0; color: #e65100; }
+        .db-type-gbase_8c { background: #e8f5e9; color: #2e7d32; }
+        .actions { display: flex; gap: 6px; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 10px;
+            width: 520px;
+            max-width: 90vw;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            animation: slideIn 0.2s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { font-size: 16px; }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            padding: 4px;
+        }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 24px; }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #555;
+        }
+        .form-group label .required { color: #c62828; margin-left: 2px; }
+        .form-row { display: flex; gap: 14px; }
+        .form-row .form-group { flex: 1; }
+        input, select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        input:focus, select:focus { border-color: #1976d2; box-shadow: 0 0 0 2px rgba(25,118,210,0.1); }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            z-index: 2000;
+            animation: toastIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .toast-success { background: #2e7d32; }
+        .toast-error { background: #c62828; }
+        .toast-info { background: #1565c0; }
+        @keyframes toastIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #999;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state p { font-size: 14px; }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-dot.online { background: #4caf50; }
+        .status-dot.offline { background: #f44336; }
+        .status-dot.unknown { background: #bdbdbd; }
+
+        .confirm-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+        }
+        .confirm-overlay.active { display: flex; }
+        .confirm-box {
+            background: #fff;
+            border-radius: 10px;
+            padding: 28px;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        .confirm-box .icon { font-size: 40px; margin-bottom: 12px; }
+        .confirm-box p { font-size: 14px; margin-bottom: 20px; color: #555; }
+        .confirm-box .btn-group { display: flex; justify-content: center; gap: 12px; }
+
+        .loading { opacity: 0.6; pointer-events: none; }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>问数 <span>MCP</span> 管理系统</h1>
+        <div class="subtitle">数据库配置 · 元数据查询 · SQL校验</div>
+    </div>
+    <div style="font-size:12px;color:#90caf9;">v1.0.0</div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <div class="card-title">
+            <span>数据库配置</span>
+            <button class="btn btn-primary" onclick="openAddModal()">+ 新增数据库</button>
+        </div>
+        <div id="tableWrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>类型</th>
+                        <th>主机</th>
+                        <th>端口</th>
+                        <th>用户名</th>
+                        <th>数据库</th>
+                        <th>MCP</th>
+                        <th>增删改</th>
+                        <th>连接</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="dbTableBody"></tbody>
+            </table>
+        </div>
+        <div id="emptyState" class="empty-state" style="display:none;">
+            <div class="icon">🗄️</div>
+            <p>暂无数据库配置，点击上方按钮新增</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="dbModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">新增数据库</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>连接名称 <span class="required">*</span></label>
+                <input type="text" id="f_name" placeholder="如：生产库、测试库">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>数据库类型 <span class="required">*</span></label>
+                    <select id="f_db_type" onchange="onDbTypeChange()">
+                        <option value="dm">达梦 (DM)</option>
+                        <option value="gbase_8a">GBase 8a (MySQL协议)</option>
+                        <option value="gbase_8c">GBase 8c (PostgreSQL协议)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>数据库名 <span class="required">*</span></label>
+                    <input type="text" id="f_database" placeholder="数据库名称">
+                </div>
+            </div>
+            <div id="remoteFields">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>主机地址</label>
+                        <input type="text" id="f_host" placeholder="127.0.0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>端口</label>
+                        <input type="number" id="f_port" placeholder="3306">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" id="f_username" placeholder="root">
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="f_password" placeholder="••••••••">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" id="btnSave" onclick="saveDatabase()">保存</button>
+        </div>
+    </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+        <div class="icon">⚠️</div>
+        <p id="confirmMsg">确定要删除吗？</p>
+        <div class="btn-group">
+            <button class="btn btn-outline" onclick="closeConfirm()">取消</button>
+            <button class="btn btn-danger" id="btnConfirmOk" onclick="confirmAction()">删除</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = '/api/databases';
+let editingId = null;
+let pendingAction = null;
+let dbStatusMap = {};
+
+async function api(url, opts = {}) {
+    const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+        ...opts,
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '请求失败');
+    return data;
+}
+
+function toast(msg, type = 'success') {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+}
+
+async function loadDatabases() {
+    try {
+        const list = await api(API);
+        const tbody = document.getElementById('dbTableBody');
+        const empty = document.getElementById('emptyState');
+        const table = document.getElementById('tableWrapper');
+
+        if (list.length === 0) {
+            table.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+        table.style.display = 'block';
+        empty.style.display = 'none';
+
+        tbody.innerHTML = list.map(db => {
+            const status = dbStatusMap[db.id];
+            const dotClass = status === true ? 'online' : status === false ? 'offline' : 'unknown';
+            const statusText = status === true ? '已连接' : status === false ? '连接失败' : '未测试';
+            const mcpBadge = db.is_active
+                ? '<span class="mcp-badge active"><span class="dot"></span>已启用</span>'
+                : '<span class="mcp-badge inactive"><span class="dot"></span>未启用</span>';
+            const mcpBtn = db.is_active
+                ? `<button class="btn btn-sm btn-deactivate" onclick="toggleMcp(${db.id}, false)">停用</button>`
+                : `<button class="btn btn-sm btn-activate" onclick="toggleMcp(${db.id}, true)">启用</button>`;
+            const dmlBadge = db.dml_allowed
+                ? '<span class="dml-badge allowed">已授权</span>'
+                : '<span class="dml-badge forbidden">未授权</span>';
+            const dmlBtn = db.dml_allowed
+                ? `<button class="btn btn-sm btn-dml-off" onclick="toggleDml(${db.id}, false)">取消授权</button>`
+                : `<button class="btn btn-sm btn-dml-on" onclick="toggleDml(${db.id}, true)">授权</button>`;
+            return `<tr>
+                <td>${db.id}</td>
+                <td><strong>${esc(db.name)}</strong></td>
+                <td><span class="db-type-badge db-type-${db.db_type}">${({dm:'达梦',gbase_8a:'GBase 8a',gbase_8c:'GBase 8c'})[db.db_type]||db.db_type}</span></td>
+                <td>${esc(db.host || '-')}</td>
+                <td>${db.port || '-'}</td>
+                <td>${esc(db.username || '-')}</td>
+                <td>${esc(db.database)}</td>
+                <td>${mcpBadge} ${mcpBtn}</td>
+                <td>${dmlBadge} ${dmlBtn}</td>
+                <td><span class="status-dot ${dotClass}"></span>${statusText}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-sm btn-success" onclick="testConnection(${db.id})">测试</button>
+                        <button class="btn btn-sm btn-warning" onclick="openEditModal(${db.id})">编辑</button>
+                        <button class="btn btn-sm btn-danger" onclick="askDelete(${db.id}, '${esc(db.name)}')">删除</button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        toast('加载失败: ' + e.message, 'error');
+    }
+}
+
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function onDbTypeChange() {
+    const type = document.getElementById('f_db_type').value;
+    if (type === 'dm') document.getElementById('f_port').value = 5236;
+    if (type === 'gbase_8a') document.getElementById('f_port').value = 5258;
+    if (type === 'gbase_8c') document.getElementById('f_port').value = 5432;
+}
+
+function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = '新增数据库';
+    document.getElementById('f_name').value = '';
+    document.getElementById('f_db_type').value = 'dm';
+    document.getElementById('f_host').value = '';
+    document.getElementById('f_port').value = 5236;
+    document.getElementById('f_username').value = '';
+    document.getElementById('f_password').value = '';
+    document.getElementById('f_database').value = '';
+    onDbTypeChange();
+    document.getElementById('dbModal').classList.add('active');
+}
+
+async function openEditModal(id) {
+    try {
+        const list = await api(API);
+        const db = list.find(d => d.id === id);
+        if (!db) return toast('未找到配置', 'error');
+        editingId = id;
+        document.getElementById('modalTitle').textContent = '编辑数据库';
+        document.getElementById('f_name').value = db.name;
+        document.getElementById('f_db_type').value = db.db_type;
+        document.getElementById('f_host').value = db.host;
+        document.getElementById('f_port').value = db.port;
+        document.getElementById('f_username').value = db.username;
+        document.getElementById('f_password').value = '';
+        document.getElementById('f_database').value = db.database;
+        document.getElementById('dbModal').classList.add('active');
+    } catch (e) {
+        toast('加载失败: ' + e.message, 'error');
+    }
+}
+
+function closeModal() {
+    document.getElementById('dbModal').classList.remove('active');
+    editingId = null;
+}
+
+async function saveDatabase() {
+    const name = document.getElementById('f_name').value.trim();
+    const db_type = document.getElementById('f_db_type').value;
+    const host = document.getElementById('f_host').value.trim();
+    const port = parseInt(document.getElementById('f_port').value) || 0;
+    const username = document.getElementById('f_username').value.trim();
+    const password = document.getElementById('f_password').value;
+    const database = document.getElementById('f_database').value.trim();
+
+    if (!name) return toast('请输入连接名称', 'error');
+    if (!database) return toast('请输入数据库名', 'error');
+
+    const btn = document.getElementById('btnSave');
+    btn.classList.add('loading');
+    btn.innerHTML = '<span class="spinner"></span> 保存中';
+
+    try {
+        if (editingId) {
+            const body = { name, db_type, host, port, username, database };
+            if (password) body.password = password;
+            await api(`${API}/${editingId}`, { method: 'PUT', body });
+            toast('更新成功');
+        } else {
+            await api(API, { method: 'POST', body: { name, db_type, host, port, username, password, database } });
+            toast('添加成功');
+        }
+        closeModal();
+        loadDatabases();
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.classList.remove('loading');
+        btn.textContent = '保存';
+    }
+}
+
+async function testConnection(id) {
+    toast('正在测试连接...', 'info');
+    try {
+        const res = await api(`${API}/${id}/test`, { method: 'POST' });
+        dbStatusMap[id] = res.success;
+        toast(res.message, res.success ? 'success' : 'error');
+        loadDatabases();
+    } catch (e) {
+        dbStatusMap[id] = false;
+        toast('测试失败: ' + e.message, 'error');
+        loadDatabases();
+    }
+}
+
+async function toggleMcp(id, activate) {
+    try {
+        const endpoint = activate ? 'activate' : 'deactivate';
+        const res = await api(`${API}/${id}/${endpoint}`, { method: 'POST' });
+        toast(res.message, 'success');
+        loadDatabases();
+    } catch (e) {
+        toast(e.message, 'error');
+    }
+}
+
+async function toggleDml(id, allow) {
+    try {
+        const endpoint = allow ? 'allow_dml' : 'forbid_dml';
+        const res = await api(`${API}/${id}/${endpoint}`, { method: 'POST' });
+        toast(res.message, 'success');
+        loadDatabases();
+    } catch (e) {
+        toast(e.message, 'error');
+    }
+}
+
+function askDelete(id, name) {
+    document.getElementById('confirmMsg').textContent = `确定要删除数据库配置 [${name}] 吗？`;
+    pendingAction = async () => {
+        try {
+            await api(`${API}/${id}`, { method: 'DELETE' });
+            delete dbStatusMap[id];
+            toast('删除成功');
+            loadDatabases();
+        } catch (e) {
+            toast('删除失败: ' + e.message, 'error');
+        }
+    };
+    document.getElementById('confirmOverlay').classList.add('active');
+}
+
+function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('active');
+    pendingAction = null;
+}
+
+async function confirmAction() {
+    if (pendingAction) await pendingAction();
+    closeConfirm();
+}
+
+document.getElementById('dbModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+document.getElementById('confirmOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeConfirm();
+});
+
+loadDatabases();
+</script>
+</body>
+</html>
