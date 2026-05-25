@@ -10,6 +10,35 @@
 - 🗄️ **多数据库支持**：达梦 (DM)、GBase 8a、GBase 8c
 - 📦 **单文件分发**：打包成单个 EXE，拷贝即用
 
+## 📥 直接下载
+
+Windows 用户可直接下载打包好的 EXE，无需安装 Python 环境：
+
+🔗 [smart-db-mcp.exe (v1.0.0)](https://github.com/zhaoran025/smart-db-mcp/releases/download/v1.0.0/smart-db-mcp.exe)
+
+两种使用方式：
+
+**方式一：直接配到 MCP 里用**
+
+在 Trae / Claude Desktop 的 MCP 配置中指向 EXE 即可启用：
+
+```json
+{
+  "mcpServers": {
+    "smart-db-mcp": {
+      "command": "C:\\path\\to\\smart-db-mcp.exe",
+      "args": []
+    }
+  }
+}
+```
+
+配置后如需管理数据库连接，浏览器打开 `http://127.0.0.1:8765` 进入后台。
+
+**方式二：双击运行**
+
+下载后双击 EXE 即可启动 MCP + Web 管理后台，浏览器自动打开后台页面。
+
 ## 快速开始
 
 ### 安装依赖
