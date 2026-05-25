@@ -16,9 +16,12 @@
 
 ```bash
 pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+
+# 达梦数据库驱动（vendor 目录已提供，离线安装即可）
+pip install vendor/dmpython-2.5.32-cp311-cp311-win_amd64.whl vendor/dmsqlalchemy-2.0.12-py3-none-any.whl
 ```
 
-> 达梦数据库需要额外安装 `dmPython` 和 `dmSQLAlchemy`，请从达梦官方获取。
+> 达梦驱动仅支持 Windows x64 + Python 3.11，其他平台请从达梦官方获取对应版本。
 
 ### 启动服务
 
