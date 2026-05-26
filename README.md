@@ -14,7 +14,7 @@
 
 Windows 用户可直接下载打包好的 EXE，无需安装 Python 环境：
 
-🔗 [smart-db-mcp.exe (v1.0.0)](https://github.com/zhaoran025/smart-db-mcp/releases/download/v1.0.0/smart-db-mcp.exe)
+🔗 [smart-db-mcp.exe (v1.1.0)](https://github.com/zhaoran025/smart-db-mcp/releases/download/v1.1.0/smart-db-mcp.exe)
 
 两种使用方式：
 
