@@ -6,10 +6,10 @@ def get_table_list(conn, schema: str) -> list:
         "SELECT T.OWNER, T.TABLE_NAME, C.COMMENTS "
         "FROM ALL_TABLES T "
         "LEFT JOIN ALL_TAB_COMMENTS C ON T.OWNER = C.OWNER AND T.TABLE_NAME = C.TABLE_NAME "
-        "WHERE T.OWNER NOT IN ('SYS', 'SYSTEM', 'SYSDBA', 'SYSSSO', 'SYSAUDITOR') "
-        "ORDER BY T.OWNER, T.TABLE_NAME"
+        "WHERE T.OWNER = :schema "
+        "ORDER BY T.TABLE_NAME"
     )
-    rows = conn.execute(sql).fetchall()
+    rows = conn.execute(sql, {"schema": schema.upper()}).fetchall()
     return [
         {
             "owner": r[0],

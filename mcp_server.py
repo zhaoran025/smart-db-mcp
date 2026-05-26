@@ -10,6 +10,7 @@ from crypto import decrypt
 from db_connector import get_engine
 from sqlalchemy import text
 import dm_tool
+import mysql_tool
 
 init_db()
 
@@ -82,6 +83,8 @@ def get_table_list(database_name: str = "") -> str:
     with eng.connect() as conn:
         if config["db_type"] == "dm":
             data = dm_tool.get_table_list(conn, config["database"])
+        elif config["db_type"] in ("mysql", "gbase_8a"):
+            data = mysql_tool.get_table_list(conn, config["database"])
         else:
             return json.dumps({"error": f"数据库类型 [{config['db_type']}] 暂不支持查表列表"}, ensure_ascii=False)
         return json.dumps(data, ensure_ascii=False)
@@ -104,6 +107,8 @@ def get_table_ddl(table_name: str, database_name: str = "") -> str:
     with eng.connect() as conn:
         if config["db_type"] == "dm":
             ddl = dm_tool.get_table_ddl(conn, config["database"], table_name)
+        elif config["db_type"] in ("mysql", "gbase_8a"):
+            ddl = mysql_tool.get_table_ddl(conn, config["database"], table_name)
         else:
             return f"数据库类型 [{config['db_type']}] 暂不支持查表结构"
         return ddl
@@ -129,6 +134,8 @@ def get_column_enum(table_name: str, column_name: str, database_name: str = "", 
     with eng.connect() as conn:
         if config["db_type"] == "dm":
             values = dm_tool.get_column_enum(conn, config["database"], table_name, column_name, column_value)
+        elif config["db_type"] in ("mysql", "gbase_8a"):
+            values = mysql_tool.get_column_enum(conn, config["database"], table_name, column_name, column_value)
         else:
             return f"数据库类型 [{config['db_type']}] 暂不支持查枚举值"
         return ";".join(values)
@@ -150,6 +157,8 @@ def get_table_simple_data(table_name: str, database_name: str = "") -> str:
     with eng.connect() as conn:
         if config["db_type"] == "dm":
             data = dm_tool.get_table_sample(conn, config["database"], table_name)
+        elif config["db_type"] in ("mysql", "gbase_8a"):
+            data = mysql_tool.get_table_sample(conn, config["database"], table_name)
         else:
             return json.dumps({"error": f"数据库类型 [{config['db_type']}] 暂不支持查样例数据"}, ensure_ascii=False)
         return json.dumps(data, ensure_ascii=False, default=str)
@@ -171,6 +180,8 @@ def verify_sql(sql: str, database_name: str = "") -> str:
     with eng.connect() as conn:
         if config["db_type"] == "dm":
             result = dm_tool.verify_sql(conn, sql)
+        elif config["db_type"] in ("mysql", "gbase_8a"):
+            result = mysql_tool.verify_sql(conn, sql)
         else:
             return json.dumps({"valid": False, "error": f"数据库类型 [{config['db_type']}] 暂不支持SQL校验"}, ensure_ascii=False)
         return json.dumps(result, ensure_ascii=False)
@@ -194,6 +205,8 @@ def execute_sql(sql: str, database_name: str = "") -> str:
     with eng.connect() as conn:
         if config["db_type"] == "dm":
             result = dm_tool.execute_sql(conn, sql, config.get("dml_allowed", False))
+        elif config["db_type"] in ("mysql", "gbase_8a"):
+            result = mysql_tool.execute_sql(conn, sql, config.get("dml_allowed", False))
         else:
             return json.dumps({"success": False, "message": f"数据库类型 [{config['db_type']}] 暂不支持执行SQL"}, ensure_ascii=False)
         return json.dumps(result, ensure_ascii=False, default=str)

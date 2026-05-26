@@ -45,6 +45,8 @@ a = Analysis(
         'httpcore',
         'h11',
         'sniffio',
+        'pymysql',
+        'mysql_tool',
     ],
     hookspath=[],
     hooksconfig={},

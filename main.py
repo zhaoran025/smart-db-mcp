@@ -10,6 +10,7 @@ from database import init_db, get_session
 from crypto import encrypt, decrypt
 from db_connector import get_engine, dispose_engine
 import dm_tool
+import mysql_tool
 
 app = FastAPI(title="SmartDB MCP管理系统")
 
@@ -95,9 +96,11 @@ async def add_database(db: DatabaseCreate):
 @app.put("/api/databases/{db_id}")
 async def update_database(db_id: int, db: DatabaseUpdate):
     with get_session() as session:
-        row = session.execute(text("SELECT id FROM database_config WHERE id = :id"), {"id": db_id}).fetchone()
+        row = session.execute(text("SELECT name FROM database_config WHERE id = :id"), {"id": db_id}).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="数据库配置不存在")
+
+        old_name = row[0]
 
         updates = []
         params = {"id": db_id}
@@ -117,6 +120,11 @@ async def update_database(db_id: int, db: DatabaseUpdate):
         updates.append("updated_at = CURRENT_TIMESTAMP")
         sql = f"UPDATE database_config SET {', '.join(updates)} WHERE id = :id"
         session.execute(text(sql), params)
+
+        dispose_engine(old_name)
+        if db.name and db.name != old_name:
+            dispose_engine(db.name)
+
         return {"success": True, "message": "更新成功"}
 
 
@@ -173,12 +181,13 @@ async def forbid_dml(db_id: int):
         return {"success": True, "message": f"数据库 [{row[0]}] 已禁止增删改"}
 
 
-SUPPORTED_DB_TYPES = {"dm", "gbase_8a", "gbase_8c"}
+SUPPORTED_DB_TYPES = {"dm", "gbase_8a", "gbase_8c", "mysql"}
 
 DB_TYPE_LABELS = {
     "dm": "达梦",
     "gbase_8a": "GBase 8a",
     "gbase_8c": "GBase 8c",
+    "mysql": "MySQL",
 }
 
 
@@ -284,6 +293,8 @@ async def mcp_get_table_list(req: TableListRequest):
         with eng.connect() as conn:
             if config["db_type"] == "dm":
                 data = dm_tool.get_table_list(conn, config["database"])
+            elif config["db_type"] in ("mysql", "gbase_8a"):
+                data = mysql_tool.get_table_list(conn, config["database"])
             else:
                 raise HTTPException(status_code=400, detail=f"数据库类型 [{config['db_type']}] 暂不支持查表列表")
             return {"success": True, "data": data}
@@ -301,6 +312,8 @@ async def mcp_get_table_ddl(req: TableDDLRequest):
         with eng.connect() as conn:
             if config["db_type"] == "dm":
                 ddl = dm_tool.get_table_ddl(conn, config["database"], req.table_name)
+            elif config["db_type"] in ("mysql", "gbase_8a"):
+                ddl = mysql_tool.get_table_ddl(conn, config["database"], req.table_name)
             else:
                 raise HTTPException(status_code=400, detail=f"数据库类型 [{config['db_type']}] 暂不支持查表结构")
             return {"success": True, "data": ddl}
@@ -318,6 +331,8 @@ async def mcp_get_column_enum(req: ColumnEnumRequest):
         with eng.connect() as conn:
             if config["db_type"] == "dm":
                 values = dm_tool.get_column_enum(conn, config["database"], req.table_name, req.column_name, req.keyword)
+            elif config["db_type"] in ("mysql", "gbase_8a"):
+                values = mysql_tool.get_column_enum(conn, config["database"], req.table_name, req.column_name, req.keyword)
             else:
                 raise HTTPException(status_code=400, detail=f"数据库类型 [{config['db_type']}] 暂不支持查枚举值")
             return {"success": True, "data": ";".join(values)}
@@ -335,6 +350,8 @@ async def mcp_get_table_sample(req: TableSampleRequest):
         with eng.connect() as conn:
             if config["db_type"] == "dm":
                 data = dm_tool.get_table_sample(conn, config["database"], req.table_name)
+            elif config["db_type"] in ("mysql", "gbase_8a"):
+                data = mysql_tool.get_table_sample(conn, config["database"], req.table_name)
             else:
                 raise HTTPException(status_code=400, detail=f"数据库类型 [{config['db_type']}] 暂不支持查样例数据")
             return {"success": True, "data": data}
@@ -352,6 +369,8 @@ async def mcp_verify_sql(req: VerifySQLRequest):
         with eng.connect() as conn:
             if config["db_type"] == "dm":
                 result = dm_tool.verify_sql(conn, req.sql)
+            elif config["db_type"] in ("mysql", "gbase_8a"):
+                result = mysql_tool.verify_sql(conn, req.sql)
             else:
                 raise HTTPException(status_code=400, detail=f"数据库类型 [{config['db_type']}] 暂不支持SQL校验")
             return {"success": True, "data": result}
@@ -369,6 +388,8 @@ async def mcp_execute_sql(req: ExecuteSQLRequest):
         with eng.connect() as conn:
             if config["db_type"] == "dm":
                 result = dm_tool.execute_sql(conn, req.sql, config.get("dml_allowed", False))
+            elif config["db_type"] in ("mysql", "gbase_8a"):
+                result = mysql_tool.execute_sql(conn, req.sql, config.get("dml_allowed", False))
             else:
                 raise HTTPException(status_code=400, detail=f"数据库类型 [{config['db_type']}] 暂不支持执行SQL")
             return result

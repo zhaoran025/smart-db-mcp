@@ -339,6 +339,7 @@
                     <label>数据库类型 <span class="required">*</span></label>
                     <select id="f_db_type" onchange="onDbTypeChange()">
                         <option value="dm">达梦 (DM)</option>
+                        <option value="mysql">MySQL</option>
                         <option value="gbase_8a">GBase 8a (MySQL协议)</option>
                         <option value="gbase_8c">GBase 8c (PostgreSQL协议)</option>
                     </select>
@@ -479,6 +480,7 @@ function esc(s) {
 function onDbTypeChange() {
     const type = document.getElementById('f_db_type').value;
     if (type === 'dm') document.getElementById('f_port').value = 5236;
+    if (type === 'mysql') document.getElementById('f_port').value = 3306;
     if (type === 'gbase_8a') document.getElementById('f_port').value = 5258;
     if (type === 'gbase_8c') document.getElementById('f_port').value = 5432;
 }

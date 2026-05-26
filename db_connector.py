@@ -15,6 +15,9 @@ def _build_url_and_args(db_type: str, host: str, port: int, username: str, pwd: 
     if db_type == "gbase_8a":
         url = f"mysql+pymysql://{quote_plus(username)}:{quote_plus(pwd)}@{host}:{port}/{database}?charset=utf8mb4"
         return url, {}
+    if db_type == "mysql":
+        url = f"mysql+pymysql://{quote_plus(username)}:{quote_plus(pwd)}@{host}:{port}/{database}?charset=utf8mb4"
+        return url, {}
     if db_type == "gbase_8c":
         url = f"postgresql+psycopg2://{quote_plus(username)}:{quote_plus(pwd)}@{host}:{port}/{database}"
         return url, {}
